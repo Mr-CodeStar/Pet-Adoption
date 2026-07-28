@@ -2,7 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import db, { initDB, dbRun, dbGet, dbAll } from './db.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distPath = path.join(__dirname, '..', 'dist');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -663,7 +669,18 @@ app.delete('/api/applications/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// Serve static frontend files from Vite build (Option A: Single Web Service Deployment)
+app.use(express.static(distPath));
+
+// Client-side SPA routing fallback
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(distPath, 'index.html'));
+});
+
 // Start Express Server
 app.listen(PORT, () => {
-  console.log(`🚀 PawPath Express SQLite Server running on http://localhost:${PORT}`);
+  console.log(`🚀 PawPath Express SQLite Server running on port ${PORT}`);
 });

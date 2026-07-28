@@ -1,4 +1,13 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl) {
+    return import.meta.env.PROD ? '/api' : 'http://localhost:5000/api';
+  }
+  const cleanUrl = envUrl.replace(/\/$/, '');
+  return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Helper for standard HTTP request handling
 async function request(endpoint, options = {}) {
@@ -26,7 +35,7 @@ async function request(endpoint, options = {}) {
   } catch (err) {
     console.error(`API Error on ${endpoint}:`, err);
     if (err.name === 'TypeError' || err.message?.includes('Failed to fetch')) {
-      throw new Error('Unable to connect to backend server. Please ensure the backend server is running on http://localhost:5000.');
+      throw new Error(`Unable to connect to backend server. Please ensure the server is running at ${API_BASE_URL}.`);
     }
     throw err;
   }
