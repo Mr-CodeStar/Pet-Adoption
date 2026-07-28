@@ -1,9 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
+import api from './services/api';
+import AdminPanel from './components/AdminPanel';
+import UserAuthModal from './components/UserAuthModal';
+import UserDashboardModal from './components/UserDashboardModal';
+import LandingPage from './components/LandingPage';
 import {
   Search,
   Plus,
   Trash2,
+  Edit,
   Heart,
   Sparkles,
   RefreshCw,
@@ -50,7 +56,8 @@ import {
   Mail,
   MapPin,
   IdCard,
-  CheckSquare
+  CheckSquare,
+  LogOut
 } from 'lucide-react';
 
 // Extended Fallback Images by Category
@@ -113,177 +120,6 @@ const AVAILABLE_CARE_TAGS = [
   'Special Needs 🩺'
 ];
 
-// Pre-populated Rich Mock Data (INR Currency Scale)
-const INITIAL_MOCK_PETS = [
-  {
-    id: 'pet-1',
-    name: 'Luna',
-    microchipId: 'PET-4819',
-    category: 'Dog',
-    status: 'Available',
-    description: 'Playful 2-year-old Golden Retriever mix who loves outdoor fetch, lake swimming, and belly rubs.',
-    imageUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&q=80&w=600',
-    isFavorite: true,
-    treatsCount: 18,
-    tags: ['Vaccinated 💉', 'House Trained 🏡', 'Kid Friendly 👶'],
-    traits: { energy: 90, cuddle: 95, vocalness: 40, kidFriendly: 100, grooming: 60 },
-    careCost: { food: 2800, litter: 1200, vet: 1500 },
-    dailyRoutine: [
-      { time: '07:00 AM', action: 'Morning park run & breakfast kibble 🥣' },
-      { time: '12:00 PM', action: 'Backyard sunbathing & chew toy playtime 🧸' },
-      { time: '05:00 PM', action: 'Evening agility training & belly rubs 🐕' },
-      { time: '09:00 PM', action: 'Cozy fireplace nap on orthopedic bed 💤' }
-    ],
-    createdAt: Date.now() - 3600000 * 24 * 3
-  },
-  {
-    id: 'pet-2',
-    name: 'Mochi',
-    microchipId: 'PET-9102',
-    category: 'Cat',
-    status: 'Urgent',
-    description: 'Gentle 5-year-old Scottish Fold in urgent need of a quiet foster home. Exceptionally sweet purr machine.',
-    imageUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=600',
-    isFavorite: true,
-    treatsCount: 24,
-    tags: ['Special Needs 🩺', 'Microchipped 🏷️'],
-    traits: { energy: 30, cuddle: 100, vocalness: 20, kidFriendly: 70, grooming: 40 },
-    careCost: { food: 1800, litter: 1500, vet: 1200 },
-    dailyRoutine: [
-      { time: '07:30 AM', action: 'Soft meows for wet food & scratching post 🐱' },
-      { time: '01:00 PM', action: 'Window perch bird watching 🦜' },
-      { time: '06:00 PM', action: 'Lap cuddle session & gentle grooming 🛋️' },
-      { time: '10:00 PM', action: 'Nightly purring sleep at foot of bed 💤' }
-    ],
-    createdAt: Date.now() - 3600000 * 24 * 5
-  },
-  {
-    id: 'pet-3',
-    name: 'Barnaby',
-    microchipId: 'PET-3374',
-    category: 'Rabbit',
-    status: 'Pending',
-    description: 'Curious Holland Lop bunny who loves fresh mint leaves, wooden chew toys, and cardboard tunnels.',
-    imageUrl: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?auto=format&fit=crop&q=80&w=600',
-    isFavorite: false,
-    treatsCount: 15,
-    tags: ['House Trained 🏡', 'Kid Friendly 👶'],
-    traits: { energy: 60, cuddle: 80, vocalness: 10, kidFriendly: 85, grooming: 50 },
-    careCost: { food: 1200, litter: 800, vet: 1000 },
-    dailyRoutine: [
-      { time: '08:00 AM', action: 'Fresh Timothy hay & organic mint leaf feast 🌿' },
-      { time: '02:00 PM', action: 'Cardboard tunnel exploration & binkies 🐇' },
-      { time: '06:30 PM', action: 'Gentle forehead pets & banana treat 🍌' },
-      { time: '09:30 PM', action: 'Flopping down in soft fleece tunnel 💤' }
-    ],
-    createdAt: Date.now() - 3600000 * 24 * 1
-  },
-  {
-    id: 'pet-4',
-    name: 'Ziggy',
-    microchipId: 'PET-7182',
-    category: 'Reptile',
-    status: 'Available',
-    description: 'Friendly Leopard Gecko with striking spots. Low maintenance and loves basking under warm UV light.',
-    imageUrl: 'https://images.unsplash.com/photo-1563460716037-460a3ad24ba9?auto=format&fit=crop&q=80&w=600',
-    isFavorite: false,
-    treatsCount: 11,
-    tags: ['Microchipped 🏷️'],
-    traits: { energy: 20, cuddle: 40, vocalness: 5, kidFriendly: 75, grooming: 10 },
-    careCost: { food: 800, litter: 500, vet: 800 },
-    dailyRoutine: [
-      { time: '09:00 AM', action: 'Basking on warm rock under UV lamp ☀️' },
-      { time: '02:00 PM', action: 'Exploring terrarium cave & hideouts 🦎' },
-      { time: '07:00 PM', action: 'Mealworm dinner & gentle hand perch 🐛' },
-      { time: '10:00 PM', action: 'Nightly sleep inside warm ceramic log 💤' }
-    ],
-    createdAt: Date.now() - 3600000 * 24 * 2
-  },
-  {
-    id: 'pet-5',
-    name: 'Pip',
-    microchipId: 'PET-2940',
-    category: 'Hamster',
-    status: 'Available',
-    description: 'Tiny Roborovski dwarf hamster who runs on his silent wheel at night and loves sunflower seeds.',
-    imageUrl: 'https://images.unsplash.com/photo-1425082661705-1834bfd09dca?auto=format&fit=crop&q=80&w=600',
-    isFavorite: true,
-    treatsCount: 20,
-    tags: ['Kid Friendly 👶'],
-    traits: { energy: 95, cuddle: 50, vocalness: 10, kidFriendly: 80, grooming: 20 },
-    careCost: { food: 600, litter: 600, vet: 500 },
-    dailyRoutine: [
-      { time: '08:00 AM', action: 'Cheek pouch seed stash restocking 🌻' },
-      { time: '01:00 PM', action: 'Deep burrow sleeping under Aspen shavings 💤' },
-      { time: '07:00 PM', action: 'Wheel sprinting marathon & maze play 🎡' },
-      { time: '11:00 PM', action: 'Midnight sand bath & grooming 🚿' }
-    ],
-    createdAt: Date.now() - 3600000 * 24 * 4
-  },
-  {
-    id: 'pet-6',
-    name: 'Finny',
-    microchipId: 'PET-8821',
-    category: 'Fish',
-    status: 'Available',
-    description: 'Vibrant Blue Tang fish thriving in a peaceful saltwater community tank.',
-    imageUrl: 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?auto=format&fit=crop&q=80&w=600',
-    isFavorite: false,
-    treatsCount: 7,
-    tags: ['Special Needs 🩺'],
-    traits: { energy: 50, cuddle: 10, vocalness: 0, kidFriendly: 90, grooming: 5 },
-    careCost: { food: 700, litter: 1000, vet: 600 },
-    dailyRoutine: [
-      { time: '08:00 AM', action: 'Flake food feeding & coral swimming 🐠' },
-      { time: '02:00 PM', action: 'Gliding through living anemones 🪸' },
-      { time: '07:00 PM', action: 'Evening algae grazing 🌿' },
-      { time: '10:00 PM', action: 'Resting in reef coral cave 💤' }
-    ],
-    createdAt: Date.now() - 3600000 * 24 * 6
-  },
-  {
-    id: 'pet-7',
-    name: 'Clover',
-    microchipId: 'PET-5501',
-    category: 'Pony',
-    status: 'Pending',
-    description: 'Sweet Shetland Mini Pony who loves apple slices, pasture trotting, and gentle grooming.',
-    imageUrl: 'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&q=80&w=600',
-    isFavorite: true,
-    treatsCount: 32,
-    tags: ['Vaccinated 💉', 'Kid Friendly 👶', 'House Trained 🏡'],
-    traits: { energy: 70, cuddle: 90, vocalness: 50, kidFriendly: 100, grooming: 80 },
-    careCost: { food: 4500, litter: 2000, vet: 2500 },
-    dailyRoutine: [
-      { time: '07:00 AM', action: 'Paddock turnout & morning oats 🌾' },
-      { time: '12:00 PM', action: 'Pasture grazing with farm companions 🐴' },
-      { time: '05:00 PM', action: 'Curry comb brushing & apple reward 🍎' },
-      { time: '09:00 PM', action: 'Tucked in fresh straw bedding 💤' }
-    ],
-    createdAt: Date.now() - 3600000 * 24 * 8
-  },
-  {
-    id: 'pet-8',
-    name: 'Kiko',
-    microchipId: 'PET-6215',
-    category: 'Bird',
-    status: 'Adopted',
-    description: 'Vibrant Sun Conure with a singing voice. Successfully placed with a loving family.',
-    imageUrl: 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?auto=format&fit=crop&q=80&w=600',
-    isFavorite: false,
-    treatsCount: 9,
-    tags: ['Vaccinated 💉', 'Microchipped 🏷️'],
-    traits: { energy: 85, cuddle: 65, vocalness: 80, kidFriendly: 60, grooming: 30 },
-    careCost: { food: 1000, litter: 800, vet: 1000 },
-    dailyRoutine: [
-      { time: '07:00 AM', action: 'Sunrise whistling tune & seed breakfast 🦜' },
-      { time: '01:00 PM', action: 'Out-of-cage flight exercise & mirror games 🪞' },
-      { time: '05:30 PM', action: 'Nut treat foraging & head scritches 🥜' },
-      { time: '08:30 PM', action: 'Covered cage night-night whispers 💤' }
-    ],
-    createdAt: Date.now() - 3600000 * 24 * 10
-  }
-];
 
 // DYNAMIC ANIMAL CURSOR & TRAIL COMPONENT
 function DynamicAnimalCursorTrail({ activeCategory }) {
@@ -551,7 +387,22 @@ function AdoptionCertificateModal({ pet, onClose, isDarkMode, onCompleteAdoption
     window.print();
   };
 
-  const handleFinishAdoption = () => {
+  const handleFinishAdoption = async () => {
+    try {
+      await api.submitApplication({
+        petId: pet.id,
+        petName: pet.name,
+        adopterName,
+        adopterEmail,
+        adopterPhone,
+        adopterIdNum,
+        adopterAddress,
+        adoptionType,
+        signatureDataUrl
+      });
+    } catch (err) {
+      console.warn('Backend application submit error:', err);
+    }
     onCompleteAdoption(pet.id, pet.name, adopterName);
     onClose();
   };
@@ -1151,6 +1002,9 @@ export default function App() {
   // Theme State
   const [isDarkMode, setIsDarkMode] = useState(true);
 
+  // Admin Panel Modal Open State
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+
   // Mobile View Navigation State ('gallery' | 'register')
   const [mobileTab, setMobileTab] = useState('gallery');
 
@@ -1174,6 +1028,22 @@ export default function App() {
   // Care Cost Mode State
   const [isSpoiledCareMode, setIsSpoiledCareMode] = useState(false);
 
+  // Navigation View State ('landing' | 'marketplace')
+  const [currentView, setCurrentView] = useState('landing');
+
+  // User Authentication State
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('pawpath_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [userToken, setUserToken] = useState(() => {
+    return localStorage.getItem('pawpath_user_token') || '';
+  });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
+  const [isUserDashboardOpen, setIsUserDashboardOpen] = useState(false);
+  const [editingPet, setEditingPet] = useState(null); // null = new pet, object = editing existing pet
+
   // Care Tags Selection State in Form
   const [selectedCareTags, setSelectedCareTags] = useState(['Vaccinated 💉']);
 
@@ -1185,13 +1055,64 @@ export default function App() {
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
 
+  // Rich Pet Traits, Care Costs & Daily Routine States
+  const [energyTrait, setEnergyTrait] = useState(80);
+  const [cuddleTrait, setCuddleTrait] = useState(85);
+  const [vocalnessTrait, setVocalnessTrait] = useState(40);
+  const [kidFriendlyTrait, setKidFriendlyTrait] = useState(90);
+  const [groomingTrait, setGroomingTrait] = useState(50);
+
+  const [foodCost, setFoodCost] = useState(2500);
+  const [vetCost, setVetCost] = useState(1500);
+  const [litterCost, setLitterCost] = useState(1000);
+
+  const [dailyRoutine, setDailyRoutine] = useState([
+    { time: '08:00 AM', action: 'Morning kibble & park walk' },
+    { time: '01:00 PM', action: 'Afternoon sunbath & playtime' },
+    { time: '06:00 PM', action: 'Evening treats & belly rubs' },
+    { time: '09:30 PM', action: 'Cozy bedtime sleep' }
+  ]);
+
   // 2. MAIN PETS ARRAY STATE
-  const [pets, setPets] = useState(INITIAL_MOCK_PETS);
+  const [pets, setPets] = useState([]);
+
+  // Load Pets from SQLite Backend
+  useEffect(() => {
+    loadPetsFromBackend();
+  }, []);
+
+  const loadPetsFromBackend = async () => {
+    try {
+      const data = await api.getPets();
+      if (Array.isArray(data)) {
+        setPets(data);
+      }
+    } catch (err) {
+      console.error('Error fetching pets from backend database:', err);
+    }
+  };
+
+  // Auth Callbacks
+  const handleAuthSuccess = (token, user) => {
+    setUserToken(token);
+    setCurrentUser(user);
+    localStorage.setItem('pawpath_user_token', token);
+    localStorage.setItem('pawpath_user', JSON.stringify(user));
+    setCurrentView('marketplace');
+    showNotification(`👋 Welcome ${user.fullName || 'User'}!`);
+  };
+
+  const handleUserLogout = () => {
+    setUserToken('');
+    setCurrentUser(null);
+    localStorage.removeItem('pawpath_user_token');
+    localStorage.removeItem('pawpath_user');
+    showNotification('Logged out successfully.');
+  };
 
   // 3. SEARCH & FILTER REACT STATES
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
 
   // Validation & Notification State
@@ -1265,6 +1186,8 @@ export default function App() {
       origin: { y: 0.7 }
     });
 
+    api.giveTreat(id).catch((err) => console.warn('Treat sync offline:', err));
+
     setPets(
       pets.map((p) => {
         if (p.id === id) {
@@ -1299,9 +1222,82 @@ export default function App() {
     }, 250);
   };
 
+  // Routine Handler Helpers
+  const handleAddRoutineItem = () => {
+    setDailyRoutine([...dailyRoutine, { time: '12:00 PM', action: 'Playtime' }]);
+  };
+
+  const handleUpdateRoutineItem = (index, field, value) => {
+    const updated = [...dailyRoutine];
+    updated[index][field] = value;
+    setDailyRoutine(updated);
+  };
+
+  const handleRemoveRoutineItem = (index) => {
+    setDailyRoutine(dailyRoutine.filter((_, i) => i !== index));
+  };
+
+  // Reset Form
+  const handleResetPetForm = () => {
+    setEditingPet(null);
+    setName('');
+    setMicrochipId('');
+    setCategory('Dog');
+    setStatus('Available');
+    setDescription('');
+    setImageUrl('');
+    setSelectedCareTags(['Vaccinated 💉']);
+    setEnergyTrait(80);
+    setCuddleTrait(85);
+    setVocalnessTrait(40);
+    setKidFriendlyTrait(90);
+    setGroomingTrait(50);
+    setFoodCost(2500);
+    setVetCost(1500);
+    setLitterCost(1000);
+    setDailyRoutine([
+      { time: '08:00 AM', action: 'Morning kibble & park walk' },
+      { time: '01:00 PM', action: 'Afternoon sunbath & playtime' },
+      { time: '06:00 PM', action: 'Evening treats & belly rubs' },
+      { time: '09:30 PM', action: 'Cozy bedtime sleep' }
+    ]);
+  };
+
+  // Start Editing Pet
+  const handleStartEditPet = (pet) => {
+    setEditingPet(pet);
+    setName(pet.name || '');
+    setMicrochipId(pet.microchipId || '');
+    setCategory(pet.category || 'Dog');
+    setStatus(pet.status === 'Adopted' ? 'Available' : (pet.status || 'Available'));
+    setDescription(pet.description || '');
+    setImageUrl(pet.imageUrl || '');
+    setSelectedCareTags(pet.tags || ['Vaccinated 💉']);
+    setEnergyTrait(pet.traits?.energy || 80);
+    setCuddleTrait(pet.traits?.cuddle || 85);
+    setVocalnessTrait(pet.traits?.vocalness || 40);
+    setKidFriendlyTrait(pet.traits?.kidFriendly || 90);
+    setGroomingTrait(pet.traits?.grooming || 50);
+    setFoodCost(pet.careCost?.food || 2500);
+    setVetCost(pet.careCost?.vet || 1500);
+    setLitterCost(pet.careCost?.litter || 1000);
+    setDailyRoutine(pet.dailyRoutine?.length > 0 ? pet.dailyRoutine : [
+      { time: '08:00 AM', action: 'Morning kibble & park walk' },
+      { time: '01:00 PM', action: 'Afternoon sunbath & playtime' }
+    ]);
+    setMobileTab('register');
+  };
+
   // Form Submit Handler
-  const handleAddPet = (e) => {
+  const handleAddPet = async (e) => {
     e.preventDefault();
+
+    if (!currentUser && !isAdminOpen) {
+      setFormError('Please sign in to register a pet for adoption.');
+      setAuthMode('login');
+      setIsAuthModalOpen(true);
+      return;
+    }
 
     if (!name.trim()) {
       setFormError('Pet name is required.');
@@ -1318,50 +1314,68 @@ export default function App() {
     const finalMicrochipId = microchipId.trim() || `PET-${Math.floor(1000 + Math.random() * 9000)}`;
     const finalImageUrl = imageUrl.trim() || getCategoryFallbackImage(category);
 
-    const newPet = {
-      id: `pet-${Date.now()}`,
+    const petPayload = {
       name: name.trim(),
       microchipId: finalMicrochipId,
       category,
-      status,
+      status: status === 'Adopted' ? 'Available' : status, // Users cannot register pet as Adopted
       description: description.trim(),
       imageUrl: finalImageUrl,
-      isFavorite: false,
-      treatsCount: 1,
       tags: selectedCareTags.length > 0 ? selectedCareTags : ['Health Checked 🩺'],
-      traits: { energy: 75, cuddle: 85, vocalness: 40, kidFriendly: 90, grooming: 50 },
-      careCost: { food: 2000, litter: 1000, vet: 1200 },
-      dailyRoutine: [
-        { time: '08:00 AM', action: 'Breakfast & morning routine' },
-        { time: '01:00 PM', action: 'Afternoon play & sunbath' },
-        { time: '06:00 PM', action: 'Evening treats & cuddling' },
-        { time: '09:30 PM', action: 'Cozy bedtime sleep' }
-      ],
-      createdAt: Date.now()
+      traits: {
+        energy: Number(energyTrait),
+        cuddle: Number(cuddleTrait),
+        vocalness: Number(vocalnessTrait),
+        kidFriendly: Number(kidFriendlyTrait),
+        grooming: Number(groomingTrait)
+      },
+      careCost: {
+        food: Number(foodCost) || 2000,
+        vet: Number(vetCost) || 1200,
+        litter: Number(litterCost) || 1000
+      },
+      dailyRoutine
     };
 
-    setPets([newPet, ...pets]);
-    showNotification(`✨ ${newPet.name} added to PawPath!`);
+    try {
+      const activeToken = userToken || localStorage.getItem('pawpath_admin_token');
+      if (editingPet) {
+        await api.updatePet(editingPet.id, petPayload, activeToken);
+        showNotification(`✨ Updated ${editingPet.name}'s profile!`);
+      } else {
+        const created = await api.createPet(petPayload, activeToken);
+        showNotification(`✨ Registered ${created.name} for adoption!`);
+      }
 
-    // Reset Form Fields
-    setName('');
-    setMicrochipId('');
-    setCategory('Dog');
-    setStatus('Available');
-    setDescription('');
-    setImageUrl('');
-    setSelectedCareTags(['Vaccinated 💉']);
-    setMobileTab('gallery');
+      await loadPetsFromBackend();
+      handleResetPetForm();
+      setMobileTab('gallery');
+    } catch (err) {
+      setFormError(err.message || 'Failed to save pet profile. Please check authorization.');
+    }
   };
 
   // Delete Pet Handler
-  const handleDeletePet = (id, petName) => {
-    setPets(pets.filter((p) => p.id !== id));
-    showNotification(`🗑️ Removed ${petName}`);
+  const handleDeletePet = async (id, petName) => {
+    try {
+      const activeToken = userToken || localStorage.getItem('pawpath_admin_token');
+      if (!activeToken) {
+        showNotification('⚠️ Please log in to delete your registered pets.');
+        setAuthMode('login');
+        setIsAuthModalOpen(true);
+        return;
+      }
+      await api.deletePet(id, activeToken);
+      showNotification(`🗑️ Removed ${petName}`);
+      await loadPetsFromBackend();
+    } catch (err) {
+      showNotification(`❌ ${err.message || 'Failed to delete pet.'}`);
+    }
   };
 
   // Toggle Favorite Handler
   const handleToggleFavorite = (id) => {
+    api.toggleFavorite(id).catch((err) => console.warn('Favorite sync offline:', err));
     setPets(
       pets.map((p) => {
         if (p.id === id) {
@@ -1391,9 +1405,7 @@ export default function App() {
         pet.name.toLowerCase().includes(query) ||
         pet.microchipId.toLowerCase().includes(query) ||
         pet.category.toLowerCase().includes(query);
-      const matchesFavorites = !onlyFavorites || pet.isFavorite;
-
-      return matchesCategory && matchesSearch && matchesFavorites;
+      return matchesCategory && matchesSearch;
     })
     .sort((a, b) => {
       if (sortBy === 'urgent') {
@@ -1502,6 +1514,43 @@ export default function App() {
         />
       )}
 
+      {/* User Auth Modal */}
+      <UserAuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authMode}
+        onAuthSuccess={handleAuthSuccess}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* User Profile & Registered Pets Dashboard Modal */}
+      <UserDashboardModal
+        isOpen={isUserDashboardOpen}
+        onClose={() => setIsUserDashboardOpen(false)}
+        currentUser={currentUser}
+        userToken={userToken}
+        pets={pets}
+        isDarkMode={isDarkMode}
+        onEditPet={handleStartEditPet}
+        onDeletePet={handleDeletePet}
+        onProfileUpdate={(updatedUser, newToken) => {
+          setCurrentUser(updatedUser);
+          setUserToken(newToken);
+          localStorage.setItem('pawpath_user', JSON.stringify(updatedUser));
+          localStorage.setItem('pawpath_user_token', newToken);
+        }}
+        onOpenRegisterPet={() => setMobileTab('register')}
+        onOpenAdmin={() => setIsAdminOpen(true)}
+      />
+
+      {/* Admin Panel Modal */}
+      <AdminPanel
+        isOpen={isAdminOpen}
+        onClose={() => setIsAdminOpen(false)}
+        isDarkMode={isDarkMode}
+        onPetsUpdated={(updatedPets) => setPets(updatedPets)}
+      />
+
       {/* Toast Notification */}
       {toastMessage && (
         <div className={`fixed top-4 right-4 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl border shadow-2xl backdrop-blur-xl animate-bounce text-xs font-bold ${
@@ -1514,93 +1563,185 @@ export default function App() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto space-y-6">
+      {/* LAYOUT CONTAINER: VERTICAL LEFT SIDEBAR NAV BAR + RIGHT CONTENT MAIN AREA */}
+      <div className={`min-h-screen ${isDarkMode ? 'bg-[#090d16] text-slate-100' : 'bg-[#f4f7fb] text-slate-900'} flex flex-col md:flex-row transition-colors duration-300`}>
         
-        {/* TOP HEADER & INTEGRATED STATS BAR */}
-        <header className="glass-panel-3d p-4 sm:p-6 rounded-3xl flex flex-col gap-4">
-          <div className="flex items-center justify-between">
+        {/* VERTICAL LEFT NAVIGATION BAR */}
+        <aside className={`w-full md:w-64 shrink-0 border-b md:border-b-0 md:border-r p-4 sm:p-6 flex flex-col justify-between md:min-h-screen sticky top-0 z-40 ${
+          isDarkMode ? 'glass-panel-3d bg-slate-950/80 border-slate-800/80' : 'glass-panel-3d bg-white/90 border-slate-200 shadow-xl'
+        }`}>
+          <div className="space-y-6">
+            {/* Brand Logo Header */}
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-indigo-600 flex items-center justify-center text-2xl sm:text-3xl shadow-lg shadow-emerald-500/20 animate-float-3d">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 to-indigo-600 flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/20 animate-float-3d">
                 🐾
               </div>
               <div>
-                <h1 className="text-xl sm:text-3xl font-black tracking-tight gradient-text-emerald">
+                <h1 className="text-xl font-black tracking-tight gradient-text-emerald">
                   PawPath
                 </h1>
-                <p className={`text-[11px] sm:text-xs font-semibold ${subTextColorClass}`}>
-                  Smart Adoption Portal & Digital Paper Certificate
+                <p className={`text-[10px] font-semibold ${subTextColorClass}`}>
+                  Smart Adoption Portal
                 </p>
               </div>
             </div>
 
-            {/* Header Controls */}
-            <div className="flex items-center gap-2">
+            {/* Navigation Links */}
+            <div className="space-y-1.5 pt-2">
+              <div className="text-[10px] font-black uppercase text-slate-400 px-3 tracking-wider">Navigation</div>
+
               <button
-                onClick={() => {
-                  setOnlyFavorites(!onlyFavorites);
-                  showNotification(!onlyFavorites ? '❤️ Favorites Filter' : 'All Pets');
-                }}
-                className={`p-2.5 sm:px-4 sm:py-2.5 rounded-2xl text-xs font-bold border transition flex items-center gap-2 active:scale-95 ${
-                  onlyFavorites
-                    ? 'bg-rose-500/20 border-rose-500/50 text-rose-400'
+                onClick={() => setCurrentView('landing')}
+                className={`w-full px-3.5 py-3 rounded-2xl text-xs font-extrabold flex items-center gap-3 transition ${
+                  currentView === 'landing'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20'
                     : isDarkMode
-                        ? 'bg-slate-900/60 border-slate-800 text-slate-400'
-                        : 'bg-white border-slate-200 text-slate-700'
+                        ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
-                title="Toggle Favorites"
               >
-                <Heart className={`w-5 h-5 ${onlyFavorites ? 'fill-rose-500 text-rose-500' : ''}`} />
-                <span className="hidden sm:inline">Favorites</span>
+                <Home className="w-4 h-4" />
+                <span>Home</span>
               </button>
 
               <button
-                onClick={() => {
-                  setIsDarkMode(!isDarkMode);
-                  showNotification(isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode');
-                }}
-                className={`p-2.5 sm:px-4 sm:py-2.5 rounded-2xl border transition text-xs font-bold active:scale-95 flex items-center gap-2 ${
-                  isDarkMode
-                    ? 'bg-slate-800 border-slate-700 text-amber-300'
-                    : 'bg-white border-slate-300 text-indigo-700'
+                onClick={() => setCurrentView('marketplace')}
+                className={`w-full px-3.5 py-3 rounded-2xl text-xs font-extrabold flex items-center gap-3 transition ${
+                  currentView === 'marketplace'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20'
+                    : isDarkMode
+                        ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
-                {isDarkMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-600" />}
-                <span className="hidden sm:inline">{isDarkMode ? 'Light' : 'Dark'}</span>
+                <LayoutGrid className="w-4 h-4" />
+                <span>Marketplace</span>
               </button>
+            </div>
+
+            {/* User Account Section */}
+            <div className="space-y-1.5 pt-4 border-t border-slate-800/60">
+              <div className="text-[10px] font-black uppercase text-slate-400 px-3 tracking-wider">Account</div>
+              
+              {currentUser ? (
+                <div className="space-y-1.5">
+                  <button
+                    onClick={() => setIsUserDashboardOpen(true)}
+                    className="w-full px-3 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500/15 to-teal-500/15 border border-emerald-500/30 hover:border-emerald-400 text-emerald-300 font-extrabold text-xs flex items-center gap-2.5 transition active:scale-95 text-left"
+                  >
+                    <div className="w-7 h-7 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-xs font-black shrink-0">
+                      {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <div className="truncate">
+                      <div className="truncate text-xs font-black">{currentUser.fullName}</div>
+                      <div className="text-[10px] text-emerald-400/80 font-semibold">{currentUser.role === 'admin' ? 'Administrator ⭐' : 'User Account'}</div>
+                    </div>
+                  </button>
+
+                  {currentUser.role === 'admin' && (
+                    <button
+                      onClick={() => setIsAdminOpen(true)}
+                      className="w-full px-3 py-2.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-300 font-extrabold text-xs flex items-center gap-2.5 hover:bg-amber-500/25 transition active:scale-95"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>Admin Controls</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleUserLogout}
+                    className="w-full px-3 py-2 rounded-2xl text-rose-400 hover:bg-rose-500/10 border border-rose-500/20 text-xs font-bold flex items-center gap-2.5 transition"
+                  >
+                    <LogOut className="w-4 h-4 shrink-0" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }}
+                  className="w-full px-3.5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 active:scale-95 transition"
+                >
+                  <User className="w-4 h-4" />
+                  <span>Sign In / Register</span>
+                </button>
+              )}
             </div>
           </div>
 
-          {/* DYNAMIC 4 STATS ROW */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-800/40">
-            <Tilt3DCard className="rounded-2xl">
-              <div className={`p-3.5 rounded-2xl border ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
-                <div className={`text-xs font-bold ${subTextColorClass}`}>Total Listed</div>
-                <div className={`text-xl sm:text-2xl font-black ${mainHeadingColorClass}`}>{totalPets}</div>
-              </div>
-            </Tilt3DCard>
-
-            <Tilt3DCard className="rounded-2xl">
-              <div className={`p-3.5 rounded-2xl border ${isDarkMode ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200'}`}>
-                <div className="text-xs font-bold text-emerald-500 dark:text-emerald-400">Available</div>
-                <div className="text-xl sm:text-2xl font-black text-emerald-500 dark:text-emerald-400">{availablePets}</div>
-              </div>
-            </Tilt3DCard>
-
-            <Tilt3DCard className="rounded-2xl">
-              <div className={`p-3.5 rounded-2xl border ${isDarkMode ? 'bg-rose-500/10 border-rose-500/20' : 'bg-rose-50 border-rose-200'}`}>
-                <div className="text-xs font-bold text-rose-500 dark:text-rose-400">Urgent</div>
-                <div className="text-xl sm:text-2xl font-black text-rose-500 dark:text-rose-400">{urgentPets}</div>
-              </div>
-            </Tilt3DCard>
-
-            <Tilt3DCard className="rounded-2xl">
-              <div className={`p-3.5 rounded-2xl border ${isDarkMode ? 'bg-sky-500/10 border-sky-500/20' : 'bg-sky-50 border-sky-200'}`}>
-                <div className="text-xs font-bold text-sky-500 dark:text-sky-400">Adopted</div>
-                <div className="text-xl sm:text-2xl font-black text-sky-500 dark:text-sky-400">{adoptedPets}</div>
-              </div>
-            </Tilt3DCard>
+          {/* Theme Preferences */}
+          <div className="pt-4 mt-6 border-t border-slate-800/60">
+            <button
+              onClick={() => {
+                setIsDarkMode(!isDarkMode);
+                showNotification(isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode');
+              }}
+              className={`w-full px-3.5 py-2.5 rounded-2xl border text-xs font-bold flex items-center justify-between transition ${
+                isDarkMode
+                  ? 'bg-slate-900 border-slate-800 text-amber-300'
+                  : 'bg-white border-slate-200 text-indigo-700'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
+                <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+              </span>
+            </button>
           </div>
-        </header>
+        </aside>
+
+        {/* MAIN CONTENT AREA */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+          
+          {/* STATS ROW (Visible in Marketplace mode) */}
+          {currentView === 'marketplace' && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <Tilt3DCard className="rounded-2xl">
+                <div className={`p-3.5 rounded-2xl border ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
+                  <div className={`text-xs font-bold ${subTextColorClass}`}>Total Listed</div>
+                  <div className={`text-xl sm:text-2xl font-black ${mainHeadingColorClass}`}>{totalPets}</div>
+                </div>
+              </Tilt3DCard>
+
+              <Tilt3DCard className="rounded-2xl">
+                <div className={`p-3.5 rounded-2xl border ${isDarkMode ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200'}`}>
+                  <div className="text-xs font-bold text-emerald-500 dark:text-emerald-400">Available</div>
+                  <div className="text-xl sm:text-2xl font-black text-emerald-500 dark:text-emerald-400">{availablePets}</div>
+                </div>
+              </Tilt3DCard>
+
+              <Tilt3DCard className="rounded-2xl">
+                <div className={`p-3.5 rounded-2xl border ${isDarkMode ? 'bg-rose-500/10 border-rose-500/20' : 'bg-rose-50 border-rose-200'}`}>
+                  <div className="text-xs font-bold text-rose-500 dark:text-rose-400">Urgent</div>
+                  <div className="text-xl sm:text-2xl font-black text-rose-500 dark:text-rose-400">{urgentPets}</div>
+                </div>
+              </Tilt3DCard>
+
+              <Tilt3DCard className="rounded-2xl">
+                <div className={`p-3.5 rounded-2xl border ${isDarkMode ? 'bg-sky-500/10 border-sky-500/20' : 'bg-sky-50 border-sky-200'}`}>
+                  <div className="text-xs font-bold text-sky-500 dark:text-sky-400">Adopted</div>
+                  <div className="text-xl sm:text-2xl font-black text-sky-500 dark:text-sky-400">{adoptedPets}</div>
+                </div>
+              </Tilt3DCard>
+            </div>
+          )}
+
+        {/* RENDER VIEW: LANDING PAGE vs ADOPTION MARKETPLACE PORTAL */}
+        {currentView === 'landing' ? (
+          <LandingPage
+            isDarkMode={isDarkMode}
+            onGoToMarketplace={() => setCurrentView('marketplace')}
+            onOpenAuth={(mode) => {
+              setAuthMode(mode);
+              setIsAuthModalOpen(true);
+            }}
+            onOpenRegisterPet={() => {
+              setCurrentView('marketplace');
+              setMobileTab('register');
+            }}
+            currentUser={currentUser}
+          />
+        ) : (
+          <>
 
         {/* EXPANDED LIFESTYLE MATCHMETER WIDGET */}
         <div className="glass-panel-3d p-4 sm:p-5 rounded-3xl border space-y-3">
@@ -1829,6 +1970,7 @@ export default function App() {
                   const matchScore = calculateMatchScore(pet);
                   const treatSymbol = getPetTreatSymbol(pet.category);
                   const isAdopted = pet.status === 'Adopted';
+                  const isOwnedByMe = currentUser && pet.ownerId === currentUser.id;
 
                   return (
                     <Tilt3DCard key={pet.id} className="h-full">
@@ -1860,6 +2002,12 @@ export default function App() {
                             <div className="absolute top-2.5 right-2.5">
                               {renderStatusBadge(pet.status)}
                             </div>
+
+                            {isOwnedByMe && (
+                              <span className="absolute bottom-2.5 left-2.5 px-2.5 py-1 rounded-xl text-[10px] font-black bg-emerald-500/90 text-white border border-emerald-400/80 shadow-md">
+                                Listed by You ⭐
+                              </span>
+                            )}
 
                             <button
                               onClick={(e) => {
@@ -1922,20 +2070,31 @@ export default function App() {
 
                             <button
                               onClick={() => handleSendTreat(pet.id)}
-                              className="px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1 transition active:scale-95"
+                              className="flex-1 px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center justify-center gap-1 transition active:scale-95"
                               title={`Send Virtual Treat (${treatSymbol})`}
                             >
                               <Gift className="w-3.5 h-3.5 text-amber-400" />
                               Treat {treatSymbol} ({pet.treatsCount || 0})
                             </button>
 
-                            <button
-                              onClick={() => handleDeletePet(pet.id, pet.name)}
-                              className="p-2 rounded-xl text-rose-500 hover:bg-rose-500/10 border border-rose-500/20 transition active:scale-95"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {(isOwnedByMe || isAdminOpen) && (
+                              <>
+                                <button
+                                  onClick={() => handleStartEditPet(pet)}
+                                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition active:scale-95"
+                                  title="Edit My Pet Profile"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeletePet(pet.id, pet.name)}
+                                  className="p-2 rounded-xl text-rose-500 hover:bg-rose-500/10 border border-rose-500/20 transition active:scale-95"
+                                  title="Delete My Registered Pet"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
                           </div>
 
                           {/* Primary Adopt / Sign Paper Button */}
@@ -1988,16 +2147,31 @@ export default function App() {
             mobileTab === 'register' ? 'block' : 'hidden md:block'
           }`}>
             
-            {/* REGISTRATION FORM COMPONENT */}
+            {/* REGISTRATION & EDIT FORM COMPONENT */}
             <div className="glass-panel-3d p-5 sm:p-6 rounded-3xl border shadow-xl">
-              <div className={`flex items-center gap-2.5 mb-4 pb-3 border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold">
-                  <Plus className="w-5 h-5 text-emerald-400" />
+              <div className={`flex items-center justify-between gap-2.5 mb-4 pb-3 border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold">
+                    {editingPet ? <Edit className="w-5 h-5 text-emerald-400" /> : <Plus className="w-5 h-5 text-emerald-400" />}
+                  </div>
+                  <div>
+                    <h2 className={`text-base font-extrabold ${mainHeadingColorClass}`}>
+                      {editingPet ? `Editing ${editingPet.name}` : 'Register Pet for Adoption'}
+                    </h2>
+                    <p className={`text-[11px] ${subTextColorClass}`}>
+                      {editingPet ? 'Update pet bio, traits & care budget' : 'Offer a pet for adoption to the community'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className={`text-base font-extrabold ${mainHeadingColorClass}`}>Create Pet Profile</h2>
-                  <p className={`text-[11px] ${subTextColorClass}`}>Local state profile creation</p>
-                </div>
+                {editingPet && (
+                  <button
+                    type="button"
+                    onClick={handleResetPetForm}
+                    className="px-2.5 py-1 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs font-bold transition"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
               </div>
 
               {formError && (
@@ -2007,7 +2181,7 @@ export default function App() {
                 </div>
               )}
 
-              <form onSubmit={handleAddPet} className="space-y-3.5">
+              <form onSubmit={handleAddPet} className="space-y-4">
                 
                 {/* 1. Name */}
                 <div>
@@ -2020,6 +2194,7 @@ export default function App() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className={`w-full rounded-xl px-3.5 py-2.5 text-xs sm:text-sm transition focus:outline-none ${inputThemeClass}`}
+                    required
                   />
                 </div>
 
@@ -2073,21 +2248,19 @@ export default function App() {
                   </select>
                 </div>
 
-                {/* 4. Adoption Status Styled Radio Buttons */}
+                {/* 4. Adoption Status Radio Buttons (Excludes Adopted) */}
                 <div>
                   <label className={`block text-xs font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'} mb-1.5`}>
                     Adoption Status <span className="text-rose-500">*</span>
                   </label>
                   <div className="grid grid-cols-2 gap-1.5">
                     {[
-                      { id: 'Available', label: 'Available', dot: 'bg-emerald-400' },
-                      { id: 'Pending', label: 'Pending', dot: 'bg-amber-400' },
-                      { id: 'Urgent', label: 'Urgent', dot: 'bg-rose-500' },
-                      { id: 'Adopted', label: 'Adopted', dot: 'bg-sky-400' }
+                      { id: 'Available', label: 'Available 🟢', dot: 'bg-emerald-400' },
+                      { id: 'Urgent', label: 'Urgent 🔴', dot: 'bg-rose-500' }
                     ].map((item) => (
                       <label
                         key={item.id}
-                        className={`flex items-center gap-1.5 p-2 rounded-xl border cursor-pointer text-xs font-bold transition ${
+                        className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border cursor-pointer text-xs font-bold transition ${
                           status === item.id
                             ? isDarkMode
                                 ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300'
@@ -2112,7 +2285,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 5. Care Badges Selector Component */}
+                {/* 5. Health & Care Badges */}
                 <div>
                   <label className={`block text-xs font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'} mb-1.5`}>
                     Health & Care Badges
@@ -2140,24 +2313,25 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 6. Description Bio Textarea */}
+                {/* 6. Bio & Description */}
                 <div>
                   <label className={`block text-xs font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'} mb-1`}>
-                    Bio & Description <span className="text-rose-500">*</span>
+                    Bio & Medical Description <span className="text-rose-500">*</span>
                   </label>
                   <textarea
                     rows={2.5}
-                    placeholder="Temperament, medical notes..."
+                    placeholder="Temperament, history, medical & dietary notes..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className={`w-full rounded-xl p-3 text-xs sm:text-sm transition focus:outline-none resize-none ${inputThemeClass}`}
+                    required
                   ></textarea>
                 </div>
 
-                {/* 7. Image URL Input */}
+                {/* 7. Image URL */}
                 <div>
                   <label className={`block text-xs font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'} mb-1`}>
-                    Image URL <span className="text-slate-400 font-normal">(Optional direct image URL)</span>
+                    Image URL <span className="text-slate-400 font-normal">(Optional direct web photo link)</span>
                   </label>
                   <input
                     type="url"
@@ -2168,13 +2342,155 @@ export default function App() {
                   />
                 </div>
 
+                {/* 8. Personality Traits Sliders */}
+                <div className="p-3.5 rounded-2xl bg-slate-900/40 border border-slate-800/80 space-y-2.5">
+                  <div className="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
+                    <Zap className="w-4 h-4" />
+                    Personality Traits Breakdown
+                  </div>
+                  
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <div className="flex justify-between font-bold text-slate-300 mb-1">
+                        <span>Energy Level ⚡</span>
+                        <span>{energyTrait}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="10"
+                        max="100"
+                        value={energyTrait}
+                        onChange={(e) => setEnergyTrait(Number(e.target.value))}
+                        className="w-full accent-emerald-500 cursor-pointer"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between font-bold text-slate-300 mb-1">
+                        <span>Cuddliness 🛋️</span>
+                        <span>{cuddleTrait}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="10"
+                        max="100"
+                        value={cuddleTrait}
+                        onChange={(e) => setCuddleTrait(Number(e.target.value))}
+                        className="w-full accent-emerald-500 cursor-pointer"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between font-bold text-slate-300 mb-1">
+                        <span>Kid Friendly 👶</span>
+                        <span>{kidFriendlyTrait}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="10"
+                        max="100"
+                        value={kidFriendlyTrait}
+                        onChange={(e) => setKidFriendlyTrait(Number(e.target.value))}
+                        className="w-full accent-emerald-500 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 9. Monthly Care Budget Breakdown */}
+                <div className="p-3.5 rounded-2xl bg-slate-900/40 border border-slate-800/80 space-y-2.5">
+                  <div className="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
+                    <IndianRupee className="w-4 h-4" />
+                    Monthly Estimated Care Budget (INR ₹)
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">Food (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="2500"
+                        value={foodCost}
+                        onChange={(e) => setFoodCost(e.target.value)}
+                        className={`w-full rounded-xl p-2 text-xs font-bold border ${inputThemeClass}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">Vet (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="1500"
+                        value={vetCost}
+                        onChange={(e) => setVetCost(e.target.value)}
+                        className={`w-full rounded-xl p-2 text-xs font-bold border ${inputThemeClass}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">Supplies (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="1000"
+                        value={litterCost}
+                        onChange={(e) => setLitterCost(e.target.value)}
+                        className={`w-full rounded-xl p-2 text-xs font-bold border ${inputThemeClass}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 10. Interactive Daily Routine Manager */}
+                <div className="p-3.5 rounded-2xl bg-slate-900/40 border border-slate-800/80 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
+                      <Clock className="w-4 h-4" />
+                      Daily Routine Schedule
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddRoutineItem}
+                      className="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-[11px] font-extrabold transition flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add Step
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {dailyRoutine.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={item.time}
+                          onChange={(e) => handleUpdateRoutineItem(idx, 'time', e.target.value)}
+                          className={`w-24 shrink-0 rounded-xl p-2 text-xs font-mono border ${inputThemeClass}`}
+                          placeholder="Time"
+                        />
+                        <input
+                          type="text"
+                          value={item.action}
+                          onChange={(e) => handleUpdateRoutineItem(idx, 'action', e.target.value)}
+                          className={`w-full rounded-xl p-2 text-xs font-medium border ${inputThemeClass}`}
+                          placeholder="Routine action description"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveRoutineItem(idx)}
+                          className="p-2 text-rose-400 hover:bg-rose-500/20 rounded-xl transition"
+                          title="Remove item"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Submit Action Button */}
                 <button
                   type="submit"
                   className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-xl text-xs sm:text-sm font-extrabold shadow-lg shadow-emerald-500/20 transition active:scale-[0.98] flex items-center justify-center gap-2"
                 >
-                  <Plus className="w-5 h-5" />
-                  Add Pet Profile
+                  {editingPet ? <Edit className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                  {editingPet ? `Update ${editingPet.name}'s Profile` : 'Register Pet for Adoption'}
                 </button>
               </form>
             </div>
@@ -2231,11 +2547,12 @@ export default function App() {
                 </div>
               </Tilt3DCard>
             </div>
-
           </div>
-
         </div>
-      </div>
+        </>
+        )}
+      </main>
     </div>
-  );
+  </div>
+);
 }

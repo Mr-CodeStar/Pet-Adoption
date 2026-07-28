@@ -1,14 +1,33 @@
-# Dependencies
+# ==========================================
+# 📦 Dependencies & Packages
+# ==========================================
 node_modules/
 .pnpm-store/
+.yarn/
+.yarn-cache/
 
-# Production build outputs
+# ==========================================
+# 🗄️ Databases & Runtime Local Storage
+# ==========================================
+server/database.sqlite
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.db
+*.db-journal
+
+# ==========================================
+# 🚀 Build & Production Distribution Outputs
+# ==========================================
 dist/
 dist-ssr/
 build/
 out/
+.next/
 
-# Local Environment Variables & Secrets
+# ==========================================
+# 🔑 Local Environment Variables & Secrets
+# ==========================================
 .env
 .env.local
 .env.development.local
@@ -16,14 +35,18 @@ out/
 .env.production.local
 *.env
 
-# Cache & Temporary Directories
+# ==========================================
+# ⚡ Caches & Temporary Files
+# ==========================================
 .cache/
 .vite/
 .eslintcache
 *.tmp
 *.temp
 
-# Logs & Debug Output
+# ==========================================
+# 📝 Logs & Debug Outputs
+# ==========================================
 logs/
 *.log
 npm-debug.log*
@@ -32,20 +55,18 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# IDE & Editor Specific Files
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+# ==========================================
+# 💻 IDE, Editor & OS Generated Files
+# ==========================================
+.vscode/
 .idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
 *.swp
 *.swo
-
-# OS Generated Files
+*.sw?
 .DS_Store
 .DS_Store?
 ._*
@@ -54,8 +75,11 @@ lerna-debug.log*
 ehthumbs.db
 Thumbs.db
 
-# AI Assistant & Tool Caches
+# ==========================================
+# 🤖 AI Assistant & Local Agent Logs
+# ==========================================
 .gemini/
 .brain/
+.agents/
 .system_generated/
 scratch/
